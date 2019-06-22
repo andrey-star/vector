@@ -1,7 +1,11 @@
 #include <gtest/gtest.h>
 #include "fault_injection.h"
 #include "counted.h"
+
 #include "vector.h"
+
+//typedef std::vector<counted> container;
+//typedef std::vector<int> container_int;
 
 typedef vector<counted> container;
 typedef vector<int> container_int;
@@ -903,8 +907,7 @@ TEST(correctness, swap_empty_single)
     faulty_run([]
                {
                    counted::no_new_instances_guard g;
-                   container c;
-                   container c2;
+                   container c, c2;
                    c2.push_back(1);
                    swap(c, c2);
                    EXPECT_EQ(1u, c.size());
@@ -973,63 +976,6 @@ TEST(correctness, swap_non_empty_non_empty)
                });
 }
 
-TEST(correctness, assign_function)
-{
-    faulty_run([]
-               {
-                   counted::no_new_instances_guard g;
-                   container c;
-                   c.push_back(4);
-                   c.push_back(8);
-                   c.push_back(15);
-                   c.push_back(16);
-                   c.push_back(23);
-                   c.push_back(42);
-                   c.assign(c.begin() + 1, c.begin() + 2);
-                   EXPECT_EQ(1u, c.size());
-                   EXPECT_EQ(8, c[0]);
-               });
-}
-
-TEST(correctness, resize_function)
-{
-    faulty_run([]
-               {
-                   counted::no_new_instances_guard g;
-                   container c;
-                   c.push_back(4);
-                   c.push_back(8);
-                   c.push_back(15);
-                   c.push_back(16);
-                   c.push_back(23);
-                   c.push_back(42);
-                   c.resize(15, 6);
-                   EXPECT_EQ(15u, c.capacity());
-                   EXPECT_EQ(6, c[9]);
-                   c.resize(3, 0);
-                   EXPECT_EQ(3u, c.capacity());
-               });
-}
-
-TEST(correctness, shrink_to_fit)
-{
-    faulty_run([]
-               {
-                   counted::no_new_instances_guard g;
-                   container c;
-                   c.push_back(4);
-                   c.push_back(8);
-                   c.push_back(15);
-                   c.push_back(16);
-                   c.push_back(23);
-                   c.push_back(42);
-                   c.resize(15, 6);
-                   c.shrink_to_fit();
-                   EXPECT_EQ(c.size(), c.capacity());
-               });
-}
-
-
 TEST(exceptions, nothrow_default_ctor)
 {
     faulty_run([]
@@ -1072,7 +1018,98 @@ TEST(exceptions, reserve)
                            {
                                for (size_t i = 0; i != 10; ++i)
                                    c.push_back(42);
+                               for (size_t i = 0; i != 10; ++i) {
+                                   c.pop_back();
+                               }
                            });
                });
 }
 
+TEST(exceptions, reserve_and_insert)
+{
+    faulty_run([]
+               {
+                   counted::no_new_instances_guard g;
+                   container_int c;
+                   c.reserve(10);
+
+                   EXPECT_NO_THROW(
+                           {
+                               for (size_t i = 0; i != 10; ++i)
+                                   c.insert(c.begin(), i);
+                           });
+               });
+}
+
+TEST(exceptions, construct_iterator) {
+    faulty_run([]
+               {
+                   counted::no_new_instances_guard g;
+                   container_int c;
+                   c.reserve(10);
+
+                   for (size_t i = 0; i != 10; ++i) {
+                       c.push_back(42);
+                   }
+                   container_int d(c.begin(), c.end());
+                   for (size_t i = 0; i != 10; i++) {
+                       EXPECT_EQ(42, d[i]);
+                   }
+               });
+}
+
+TEST(correctness, assign) {
+    faulty_run([]
+               {
+                   counted::no_new_instances_guard g;
+                   container c;
+                   c.push_back(1);
+                   c.push_back(2);
+                   c.push_back(3);
+                   container d;
+                   d.push_back(4);
+                   EXPECT_EQ(4, d[0]);
+                   d.assign(c.begin(), c.end());
+                   EXPECT_EQ(3u, d.size());
+                   EXPECT_EQ(1, d[0]);
+                   EXPECT_EQ(2, d[1]);
+                   EXPECT_EQ(3, d[2]);
+                   container e;
+                   e.push_back(5);
+                   c.assign(e.begin(), e.end());
+                   EXPECT_EQ(1u, c.size());
+                   EXPECT_EQ(5, c[0]);
+               });
+}
+
+TEST(correctness, clear) {
+    faulty_run([]
+               {
+                   counted::no_new_instances_guard g;
+                   container c;
+                   for (size_t i = 0; i != 10; i++) {
+                       c.push_back(228);
+                   }
+                   EXPECT_EQ(10u, c.size());
+                   c.clear();
+                   EXPECT_EQ(0u, c.size());
+               });
+}
+
+TEST(correctness, resize) {
+    faulty_run([]
+               {
+                   counted::no_new_instances_guard g;
+                   container c;
+                   for (size_t i = 0; i != 5; i++) {
+                       c.push_back(282);
+                   }
+                   c.resize(4, 228);
+                   EXPECT_EQ(4u, c.size());
+                   c.resize(10, 228);
+                   EXPECT_EQ(10u, c.size());
+                   EXPECT_EQ(282, c[3]);
+                   EXPECT_EQ(228, c[4]);
+                   EXPECT_EQ(228, c[9]);
+               });
+}

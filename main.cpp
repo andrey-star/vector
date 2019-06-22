@@ -15,7 +15,6 @@ void print(vector<T> &v) {
 
 int main() {
     vector<int> c;
-    c.reserve(10);
-    c.begin();
-    print(c);
+    c.resize(5, 5);
+    c.assign(c.begin(), c.end());
 }
