@@ -15,12 +15,7 @@ void print(vector<T> &v) {
 
 int main() {
     vector<int> c;
-    c.push_back(4);
-    c.push_back(8);
-    c.push_back(15);
-    c.push_back(16);
-    c.push_back(23);
-    c.push_back(42);
-    c.erase(c.begin());
+    c.reserve(10);
+    c.begin();
     print(c);
 }

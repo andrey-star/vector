@@ -230,6 +230,7 @@ vector<T>::vector(InputIterator first, InputIterator last) : single(false), buf(
             for (size_t j = 0; j < i; ++j) {
                 pop_back();
             }
+            throw;
         }
     }
 }
@@ -257,7 +258,6 @@ T &vector<T>::operator[](size_t index) {
         return val;
     }
     make_unique();
-    assert(index < size());
     return *(buf_start() + index);
 }
 
@@ -267,7 +267,6 @@ T const &vector<T>::operator[](size_t index) const {
         assert(index == 0);
         return val;
     }
-    assert(index < size());
     return *(buf_start() + index);
 }
 
